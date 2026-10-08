@@ -84,3 +84,38 @@ test("CLI returns incomplete coverage for unsupported package identity", async (
   );
   assert.equal(report.checks[0].status, "unassessed");
 });
+
+test("report output replaces symlinks without overwriting their targets", async () => {
+  const { symlink, lstat, rm } = await import("node:fs/promises");
+  const dir = await mkdtemp(path.join(tmpdir(), "seculens-links-"));
+  try {
+    const sentinel = path.join(dir, "private.txt");
+    await writeFile(sentinel, "DO NOT CHANGE");
+    for (const name of [
+      "sbom.json",
+      "database.json",
+      "report.json",
+      "report.docx",
+    ])
+      await symlink(sentinel, path.join(dir, name));
+    await exec(process.execPath, [
+      "dist/cli.js",
+      "scan",
+      "examples/spdx.json",
+      "--db",
+      "examples/database.json",
+      "-o",
+      dir,
+    ]);
+    assert.equal(await readFile(sentinel, "utf8"), "DO NOT CHANGE");
+    for (const name of [
+      "sbom.json",
+      "database.json",
+      "report.json",
+      "report.docx",
+    ])
+      assert.equal((await lstat(path.join(dir, name))).isSymbolicLink(), false);
+  } finally {
+    await rm(dir, { recursive: true, force: true });
+  }
+});

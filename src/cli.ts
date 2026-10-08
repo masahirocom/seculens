@@ -2,7 +2,15 @@
 import { Command } from "commander";
 import { wizard } from "./wizard.js";
 let uiLanguage: "en" | "ja" = "en";
-import { readFile, writeFile, mkdir } from "node:fs/promises";
+import {
+  readFile,
+  writeFile,
+  mkdir,
+  mkdtemp,
+  rename,
+  rm,
+  chmod,
+} from "node:fs/promises";
 import path from "node:path";
 import { execFile } from "node:child_process";
 import { promisify } from "node:util";
@@ -19,7 +27,7 @@ import type { Policy } from "./types.js";
 const cli = new Command()
   .name("seculens")
   .description("SBOM assessment and evidence-based customer reports")
-  .version("0.3.1");
+  .version("0.3.2");
 cli
   .command("sbom")
   .description(
@@ -34,10 +42,24 @@ cli
     const { stdout } = await promisify(execFile)(
       process.platform === "win32" ? "npm.cmd" : "npm",
       ["sbom", `--sbom-format=${opts.format}`],
-      { cwd: path.resolve(project), maxBuffer: 64 * 1024 * 1024 },
+      {
+        cwd: path.resolve(project),
+        maxBuffer: 64 * 1024 * 1024,
+        timeout: 300000,
+      },
     );
     parseSbom(JSON.parse(stdout));
-    await writeFile(opts.output, stdout);
+    const temporary = await mkdtemp(
+      path.join(path.dirname(path.resolve(opts.output)), ".seculens-"),
+    );
+    try {
+      await writeFile(path.join(temporary, "sbom.json"), stdout, {
+        mode: 0o600,
+      });
+      await rename(path.join(temporary, "sbom.json"), opts.output);
+    } finally {
+      await rm(temporary, { recursive: true, force: true });
+    }
     console.log(
       uiLanguage === "ja"
         ? `SBOMを保存しました: ${opts.output}`
@@ -124,19 +146,38 @@ cli
         target: path.basename(path.resolve(opts.source)),
       };
     }
-    await mkdir(opts.output, { recursive: true });
-    await writeFile(path.join(opts.output, "sbom.json"), input);
-    await writeFile(path.join(opts.output, "database.json"), databaseText);
-    await writeFile(
-      path.join(opts.output, "report.json"),
-      JSON.stringify(report, null, 2) + "\n",
-    );
-    await writeWordReport(
-      report,
-      path.join(opts.output, "report.docx"),
-      opts.lang,
-      { style: opts.reportStyle, issuer: opts.issuer },
-    );
+    await mkdir(opts.output, { recursive: true, mode: 0o700 });
+    const temporary = await mkdtemp(path.join(opts.output, ".seculens-"));
+    try {
+      await writeFile(path.join(temporary, "sbom.json"), input, {
+        mode: 0o600,
+      });
+      await writeFile(path.join(temporary, "database.json"), databaseText, {
+        mode: 0o600,
+      });
+      await writeFile(
+        path.join(temporary, "report.json"),
+        JSON.stringify(report, null, 2) + "\n",
+        { mode: 0o600 },
+      );
+      await writeWordReport(
+        report,
+        path.join(temporary, "report.docx"),
+        opts.lang,
+        { style: opts.reportStyle, issuer: opts.issuer },
+      );
+      for (const name of [
+        "sbom.json",
+        "database.json",
+        "report.json",
+        "report.docx",
+      ]) {
+        await chmod(path.join(temporary, name), 0o600);
+        await rename(path.join(temporary, name), path.join(opts.output, name));
+      }
+    } finally {
+      await rm(temporary, { recursive: true, force: true });
+    }
     console.log(
       uiLanguage === "ja"
         ? `構成部品 ${report.sbom.components.length}件、指摘 ${report.findings.length}件、未評価 ${report.checks.filter((c) => c.status === "unassessed").length}件。レポート: ${opts.output}`
