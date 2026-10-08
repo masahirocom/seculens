@@ -19,7 +19,7 @@ import type { Policy } from "./types.js";
 const cli = new Command()
   .name("seculens")
   .description("SBOM assessment and evidence-based customer reports")
-  .version("0.3.0");
+  .version("0.3.1");
 cli
   .command("sbom")
   .description(

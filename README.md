@@ -2,7 +2,7 @@
 
 SecuLens is a TypeScript security assessment CLI and library. It reads SPDX and CycloneDX SBOMs, independently matches component versions against OSV advisory records, evaluates license policies, reviews JavaScript/TypeScript syntax trees, and writes customer-facing Word reports.
 
-**Version 0.3.0 is an early release.** Findings are evidence for review, not a guarantee of security or legal compliance. The independent Python implementation is available at https://github.com/masahirocom/seculens-python; PHP is planned.
+**Version 0.3.1 is an early release.** Findings are evidence for review, not a guarantee of security or legal compliance. The independent Python implementation is available at https://github.com/masahiroid/seculens-python; PHP is planned.
 
 ## Interactive wizard / 対話ウィザード
 
@@ -23,7 +23,7 @@ Choose an existing SBOM assessment or SBOM generation, then supply the requested
 Requires Node.js 22 or later and npm.
 
 ```sh
-npm install -g https://github.com/masahirocom/seculens/releases/download/v0.3.0/seculens-0.3.0.tgz
+npm install -g https://github.com/masahiroid/seculens/releases/download/v0.3.1/seculens-0.3.1.tgz
 seculens --help
 ```
 

@@ -1,6 +1,6 @@
 {
   "name": "seculens",
-  "version": "0.3.0",
+  "version": "0.3.1",
   "description": "Evidence-based SBOM vulnerability matching, license policy checks, static analysis and Word reports.",
   "type": "module",
   "license": "Apache-2.0",
@@ -34,12 +34,12 @@
   },
   "repository": {
     "type": "git",
-    "url": "git+https://github.com/masahirocom/seculens.git"
+    "url": "git+https://github.com/masahiroid/seculens.git"
   },
   "bugs": {
-    "url": "https://github.com/masahirocom/seculens/issues"
+    "url": "https://github.com/masahiroid/seculens/issues"
   },
-  "homepage": "https://github.com/masahirocom/seculens#readme",
+  "homepage": "https://github.com/masahiroid/seculens#readme",
   "keywords": [
     "sbom",
     "security",
