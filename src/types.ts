@@ -85,7 +85,7 @@ export interface Check {
 }
 export interface Report {
   schemaVersion: "1.1";
-  tool: { name: "SecuLens"; version: "0.2.0" };
+  tool: { name: "SecuLens"; version: "0.3.0" };
   createdAt: string;
   customer: string;
   target: string;

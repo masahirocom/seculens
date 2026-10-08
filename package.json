@@ -1,6 +1,6 @@
 {
   "name": "seculens",
-  "version": "0.2.0",
+  "version": "0.3.0",
   "description": "Evidence-based SBOM vulnerability matching, license policy checks, static analysis and Word reports.",
   "type": "module",
   "license": "Apache-2.0",

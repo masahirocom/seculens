@@ -2,14 +2,28 @@
 
 SecuLens is a TypeScript security assessment CLI and library. It reads SPDX and CycloneDX SBOMs, independently matches component versions against OSV advisory records, evaluates license policies, reviews JavaScript/TypeScript syntax trees, and writes customer-facing Word reports.
 
-**Version 0.2.0 is an early release.** Findings are evidence for review, not a guarantee of security or legal compliance. The independent Python implementation is available at https://github.com/masahirocom/seculens-python; PHP is planned.
+**Version 0.3.0 is an early release.** Findings are evidence for review, not a guarantee of security or legal compliance. The independent Python implementation is available at https://github.com/masahirocom/seculens-python; PHP is planned.
+
+## Interactive wizard / 対話ウィザード
+
+Run `seculens` with no arguments to start interactive setup. English is the default: press Enter at the language prompt, or type `ja` for Japanese. Use `seculens wizard --lang ja` to open Japanese setup directly.
+
+```sh
+seculens
+# or
+seculens wizard --lang ja
+```
+
+Choose an existing SBOM assessment or SBOM generation, then supply the requested paths and options. Assessment asks for a local OSV snapshot or explicit OSV fetching, an optional license policy and source directory, customer / target / preparer, report style, output directory and findings exit policy. Customer report layout is the wizard default. Review the settings and confirm to start. EOF or choosing `n` at the final prompt cancels; Ctrl+C interrupts. OSV fetching sends package names and ecosystems; the wizard displays this before execution.
+
+`seculens` だけで起動すると設定ウィザードが始まります。言語選択でEnterを押すと英語、`ja` を入力すると日本語です。入力した言語をWordレポートにも使います。最後に設定を確認して開始できます。パスは現在の作業フォルダーを基準に入力してください。従来の `scan` / `sbom` コマンドとオプション指定も利用できます。
 
 ## Install
 
 Requires Node.js 22 or later and npm.
 
 ```sh
-npm install -g https://github.com/masahirocom/seculens/releases/download/v0.2.0/seculens-0.2.0.tgz
+npm install -g https://github.com/masahirocom/seculens/releases/download/v0.3.0/seculens-0.3.0.tgz
 seculens --help
 ```
 
@@ -139,5 +153,8 @@ Scoring reference: https://www.first.org/cvss/v3.1/specification-document
 OSV field reference: https://ossf.github.io/osv-schema/
 
 ```js
-await writeWordReport(report, "customer.docx", "ja", {style: "customer", issuer: "Assessment Team"});
+await writeWordReport(report, "customer.docx", "ja", {
+  style: "customer",
+  issuer: "Assessment Team",
+});
 ```

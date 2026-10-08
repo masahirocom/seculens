@@ -1,5 +1,7 @@
 #!/usr/bin/env node
 import { Command } from "commander";
+import { wizard } from "./wizard.js";
+let uiLanguage: "en" | "ja" = "en";
 import { readFile, writeFile, mkdir } from "node:fs/promises";
 import path from "node:path";
 import { execFile } from "node:child_process";
@@ -17,7 +19,7 @@ import type { Policy } from "./types.js";
 const cli = new Command()
   .name("seculens")
   .description("SBOM assessment and evidence-based customer reports")
-  .version("0.2.0");
+  .version("0.3.0");
 cli
   .command("sbom")
   .description(
@@ -36,7 +38,11 @@ cli
     );
     parseSbom(JSON.parse(stdout));
     await writeFile(opts.output, stdout);
-    console.log(`SBOM written to ${opts.output}`);
+    console.log(
+      uiLanguage === "ja"
+        ? `SBOMを保存しました: ${opts.output}`
+        : `SBOM written to ${opts.output}`,
+    );
   });
 cli
   .command("scan")
@@ -80,7 +86,9 @@ cli
       records = validateDatabase(JSON.parse(databaseText));
     } else {
       console.error(
-        "Fetching OSV candidates: package names and ecosystems are sent to api.osv.dev.",
+        uiLanguage === "ja"
+          ? "OSVから取得中: パッケージ名とエコシステムをapi.osv.devへ送信します。"
+          : "Fetching OSV candidates: package names and ecosystems are sent to api.osv.dev.",
       );
       records = await fetchDatabase(sbom.components);
       databaseText = JSON.stringify({ records }, null, 2) + "\n";
@@ -130,7 +138,9 @@ cli
       { style: opts.reportStyle, issuer: opts.issuer },
     );
     console.log(
-      `${report.sbom.components.length} components; ${report.findings.length} findings; ${report.checks.filter((c) => c.status === "unassessed").length} incomplete component assessments. Reports: ${opts.output}`,
+      uiLanguage === "ja"
+        ? `構成部品 ${report.sbom.components.length}件、指摘 ${report.findings.length}件、未評価 ${report.checks.filter((c) => c.status === "unassessed").length}件。レポート: ${opts.output}`
+        : `${report.sbom.components.length} components; ${report.findings.length} findings; ${report.checks.filter((c) => c.status === "unassessed").length} incomplete component assessments. Reports: ${opts.output}`,
     );
     if (
       opts.failOnFindings &&
@@ -145,7 +155,27 @@ cli
     else if (report.findings.some((f) => f.status === "unassessed"))
       process.exitCode = 2;
   });
-cli.parseAsync().catch((error: Error) => {
+cli
+  .command("wizard")
+  .description("Interactive setup in English or Japanese")
+  .option("--lang <language>", "Wizard language: en or ja (default en)")
+  .action(async (opts) => {
+    if (opts.lang && !["en", "ja"].includes(opts.lang))
+      throw new Error("Language must be en or ja");
+    const result = await wizard(opts.lang);
+    uiLanguage = result.language;
+    if (result.args) await cli.parseAsync(result.args, { from: "user" });
+  });
+async function main() {
+  const args = process.argv.slice(2);
+  if (!args.length) {
+    const result = await wizard();
+    uiLanguage = result.language;
+    if (!result.args) return;
+    await cli.parseAsync(result.args, { from: "user" });
+  } else await cli.parseAsync(args, { from: "user" });
+}
+main().catch((error: Error) => {
   console.error(`SecuLens: ${error.message}`);
   process.exitCode = 2;
 });
