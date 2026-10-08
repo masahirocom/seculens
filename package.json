@@ -1,0 +1,66 @@
+{
+  "name": "seculens",
+  "version": "0.1.0",
+  "description": "Evidence-based SBOM vulnerability matching, license policy checks, static analysis and Word reports.",
+  "type": "module",
+  "license": "Apache-2.0",
+  "engines": {
+    "node": ">=22"
+  },
+  "bin": {
+    "seculens": "dist/cli.js"
+  },
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "import": "./dist/index.js"
+    }
+  },
+  "files": [
+    "dist",
+    "README.md",
+    "LICENSE",
+    "NOTICE",
+    "examples",
+    "docs",
+    "SECURITY.md",
+    "assets"
+  ],
+  "scripts": {
+    "build": "tsc",
+    "test": "npm run build && node --test test/*.test.mjs",
+    "prepack": "npm run build"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/masahirocom/seculens.git"
+  },
+  "bugs": {
+    "url": "https://github.com/masahirocom/seculens/issues"
+  },
+  "homepage": "https://github.com/masahirocom/seculens#readme",
+  "keywords": [
+    "sbom",
+    "security",
+    "spdx",
+    "cyclonedx",
+    "vulnerability",
+    "sast",
+    "docx"
+  ],
+  "dependencies": {
+    "@renovatebot/pep440": "^4.2.4",
+    "commander": "^14.0.3",
+    "docx": "^9.9.0",
+    "packageurl-js": "^2.0.1",
+    "semver": "^7.8.5",
+    "spdx-expression-parse": "^5.0.0",
+    "typescript": "5.9.3"
+  },
+  "devDependencies": {
+    "@types/node": "^26.6.4",
+    "@types/semver": "^7.8.0",
+    "@types/spdx-expression-parse": "^4.0.0",
+    "prettier": "3.6.2"
+  }
+}
