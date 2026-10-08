@@ -85,7 +85,7 @@ export interface Check {
 }
 export interface Report {
   schemaVersion: "1.1";
-  tool: { name: "SecuLens"; version: "0.3.1" };
+  tool: { name: "SecuLens"; version: string };
   createdAt: string;
   customer: string;
   target: string;
@@ -95,7 +95,7 @@ export interface Report {
   checks: Check[];
   findings: Finding[];
   sourceAnalysis?: {
-    language: "Python" | "JavaScript/TypeScript";
+    language: "Python" | "JavaScript/TypeScript" | "PHP";
     target: string;
   };
   limitations: string[];

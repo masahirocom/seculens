@@ -1,6 +1,6 @@
 # SecuLens architecture
 
-The Node.js/TypeScript implementation is the reference implementation for release 0.1.0. Python and PHP implementations will run independently and will share specifications and fixtures, not a Python runtime or remote service dependency.
+The Node.js/TypeScript implementation is the reference implementation for release 0.1.0. The [Python](https://github.com/masahiroid/seculens-python) and [PHP](https://github.com/masahiroid/seculens-php) implementations run independently and share the report contract and assessment fixtures. They do not depend on a Python runtime or remote assessment service.
 
 ## Processing
 
@@ -24,7 +24,7 @@ All implementations should preserve schemaVersion 1.0 report concepts: component
 - Broader Composer version semantics and test corpus.
 - CVSS and customer-context prioritization with explicit provenance.
 - Report templates, reviewer notes, waivers, remediation and baseline diffs.
-- Native Python/PHP implementations and their AST analyzers.
+- Extend native AST analyzers with dataflow and framework-aware review rules.
 - Dataflow-based security rules with documented framework coverage.
 - Broader OS package/vendor advisories and configurable DB providers.
 - Schema-aware SPDX 3 and XML adapters.

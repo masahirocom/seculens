@@ -4,7 +4,7 @@
 
 SecuLensはTypeScriptで実装したセキュリティ評価CLI・ライブラリです。SPDXとCycloneDXのSBOMを読み込み、コンポーネントのバージョンをOSVの脆弱性情報と独自に照合します。ライセンスポリシーの評価、JavaScript／TypeScriptのAST解析、顧客提出用Wordレポートの生成にも対応します。
 
-**0.3.1は初期リリースです。** 検出結果は確認のための根拠であり、安全性や法令遵守を保証するものではありません。[独立したPython実装](https://github.com/masahiroid/seculens-python)も公開しています。PHP版は計画中です。
+**0.3.1は初期リリースです。** 検出結果は確認のための根拠であり、安全性や法令遵守を保証するものではありません。[独立したPython実装](https://github.com/masahiroid/seculens-python)も公開しています。[独立したPHP実装](https://github.com/masahiroid/seculens-php)も公開しています。
 
 ## インストール
 

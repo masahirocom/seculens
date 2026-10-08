@@ -4,7 +4,7 @@
 
 SecuLens is a TypeScript security assessment CLI and library. It reads SPDX and CycloneDX SBOMs, independently matches component versions against OSV advisory records, evaluates license policies, reviews JavaScript/TypeScript syntax trees, and writes customer-facing Word reports.
 
-**Version 0.3.1 is an early release.** Findings are evidence for review, not a guarantee of security or legal compliance. The independent Python implementation is available at https://github.com/masahiroid/seculens-python; PHP is planned.
+**Version 0.3.1 is an early release.** Findings are evidence for review, not a guarantee of security or legal compliance. The independent Python implementation is available at https://github.com/masahiroid/seculens-python; the independent [PHP implementation](https://github.com/masahiroid/seculens-php) is also available.
 
 ## Interactive wizard
 
@@ -123,7 +123,7 @@ npm test
 npm pack
 ```
 
-See [architecture and roadmap](docs/architecture.md) for the independent Python and PHP implementation plan. See [security policy](SECURITY.md) for responsible reporting.
+See [architecture and roadmap](docs/architecture.md) for the independent implementations and future work. See [security policy](SECURITY.md) for responsible reporting.
 
 ## License
 
