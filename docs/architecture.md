@@ -30,3 +30,5 @@ All implementations should preserve schemaVersion 1.0 report concepts: component
 - Schema-aware SPDX 3 and XML adapters.
 
 No published release should claim Trivy feature parity. The first release focuses on auditable SBOM assessment and reporting.
+
+See the README customer report mode section for severity evidence and layout options.

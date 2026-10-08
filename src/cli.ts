@@ -17,7 +17,7 @@ import type { Policy } from "./types.js";
 const cli = new Command()
   .name("seculens")
   .description("SBOM assessment and evidence-based customer reports")
-  .version("0.1.0");
+  .version("0.2.0");
 cli
   .command("sbom")
   .description(
@@ -52,6 +52,13 @@ cli
   .option("--policy <file>", "License policy JSON")
   .option("--source <directory>", "Run JS/TS AST review rules")
   .option("--customer <name>", "Customer name", "Customer")
+  .option("--target <name>", "Human-readable system or project name")
+  .option(
+    "--report-style <style>",
+    "Word layout: standard or customer",
+    "standard",
+  )
+  .option("--issuer <name>", "Report preparer name for the customer cover", "")
   .option("--lang <language>", "Word report language: en or ja", "en")
   .option("-o, --output <directory>", "Output directory", "reports")
   .option(
@@ -61,6 +68,8 @@ cli
   .action(async (file, opts) => {
     if (Boolean(opts.db) === Boolean(opts.fetchOsv))
       throw new Error("Specify exactly one of --db or --fetch-osv");
+    if (!["standard", "customer"].includes(opts.reportStyle))
+      throw new Error("Report style must be standard or customer");
     if (!["en", "ja"].includes(opts.lang))
       throw new Error("Language must be en or ja");
     const input = await readFile(file, "utf8");
@@ -93,14 +102,20 @@ cli
     }
     const report = scanSbom(input, records, {
       customer: opts.customer,
-      target: path.basename(file),
+      target: opts.target || path.basename(file),
       policy,
       databaseSource: opts.db
         ? path.basename(opts.db)
         : "OSV API candidate snapshot",
       databaseHash: sha256(databaseText),
     });
-    if (opts.source) report.findings.push(...(await analyze(opts.source)));
+    if (opts.source) {
+      report.findings.push(...(await analyze(opts.source)));
+      report.sourceAnalysis = {
+        language: "JavaScript/TypeScript",
+        target: path.basename(path.resolve(opts.source)),
+      };
+    }
     await mkdir(opts.output, { recursive: true });
     await writeFile(path.join(opts.output, "sbom.json"), input);
     await writeFile(path.join(opts.output, "database.json"), databaseText);
@@ -112,6 +127,7 @@ cli
       report,
       path.join(opts.output, "report.docx"),
       opts.lang,
+      { style: opts.reportStyle, issuer: opts.issuer },
     );
     console.log(
       `${report.sbom.components.length} components; ${report.findings.length} findings; ${report.checks.filter((c) => c.status === "unassessed").length} incomplete component assessments. Reports: ${opts.output}`,

@@ -20,8 +20,12 @@ export interface OsvRecord {
   details?: string;
   withdrawn?: string;
   modified?: string;
+  severity?: { type: string; score: string }[];
+  database_specific?: { severity?: string };
   references?: { type: string; url: string }[];
   affected: {
+    severity?: { type: string; score: string }[];
+    database_specific?: { severity?: string };
     package: { name: string; ecosystem: string; purl?: string };
     versions?: string[];
     ranges?: {
@@ -35,7 +39,28 @@ export interface OsvRecord {
     }[];
   }[];
 }
+export type SeverityLevel =
+  | "critical"
+  | "high"
+  | "medium"
+  | "low"
+  | "none"
+  | "unknown";
+export interface SeveritySource {
+  recordId: string;
+  field: string;
+  type: string;
+  value: string;
+  level: SeverityLevel;
+  score?: number;
+}
+export interface Severity {
+  level: SeverityLevel;
+  score?: number;
+  sources: SeveritySource[];
+}
 export interface Finding {
+  severity?: Severity;
   category: "vulnerability" | "license" | "security" | "quality" | "coverage";
   ruleId: string;
   subject: string;
@@ -59,8 +84,8 @@ export interface Check {
   reason?: string;
 }
 export interface Report {
-  schemaVersion: "1.0";
-  tool: { name: "SecuLens"; version: "0.1.0" };
+  schemaVersion: "1.1";
+  tool: { name: "SecuLens"; version: "0.2.0" };
   createdAt: string;
   customer: string;
   target: string;
@@ -69,5 +94,9 @@ export interface Report {
   sbom: Sbom;
   checks: Check[];
   findings: Finding[];
+  sourceAnalysis?: {
+    language: "Python" | "JavaScript/TypeScript";
+    target: string;
+  };
   limitations: string[];
 }

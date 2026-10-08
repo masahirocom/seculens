@@ -3,3 +3,4 @@ dist/
 *.tgz
 .seculens/
 reports/
+releases/

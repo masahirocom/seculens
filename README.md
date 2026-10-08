@@ -2,14 +2,14 @@
 
 SecuLens is a TypeScript security assessment CLI and library. It reads SPDX and CycloneDX SBOMs, independently matches component versions against OSV advisory records, evaluates license policies, reviews JavaScript/TypeScript syntax trees, and writes customer-facing Word reports.
 
-**Version 0.1.0 is an early release.** Findings are evidence for review, not a guarantee of security or legal compliance. Python and PHP implementations are planned; this release is the independent Node.js implementation.
+**Version 0.2.0 is an early release.** Findings are evidence for review, not a guarantee of security or legal compliance. The independent Python implementation is available at https://github.com/masahirocom/seculens-python; PHP is planned.
 
 ## Install
 
 Requires Node.js 22 or later and npm.
 
 ```sh
-npm install -g https://github.com/masahirocom/seculens/releases/download/v0.1.0/seculens-0.1.0.tgz
+npm install -g https://github.com/masahirocom/seculens/releases/download/v0.2.0/seculens-0.2.0.tgz
 seculens --help
 ```
 
@@ -115,3 +115,29 @@ See [architecture and roadmap](docs/architecture.md) for the independent Python 
 Apache-2.0. SecuLens is independent of Trivy and of the optical lens company using the SECULENS name. Advisory records retain their respective source licensing; do not assume the software license applies to downloaded database snapshots.
 
 Japanese Word reports embed the bundled Noto Sans JP font (SIL OFL 1.1) to preserve Japanese text across viewing environments. This increases the report size by approximately 4 MB.
+
+## Customer report mode
+
+Add `--report-style customer` to generate a formal Word report with a dedicated cover, executive summary, severity colors, a prioritized findings register, numbered details, component coverage tables, evidence hashes and page numbers. Existing standard layout remains available with `--report-style standard` (the default).
+
+```sh
+seculens scan bom.json --db database.json --policy policy.json \
+  --customer "Customer Company" --target "Customer Web Service" \
+  --issuer "Security Assessment Team" --lang ja \
+  --report-style customer --output reports/customer
+```
+
+`--target` supplies a human-readable system name; it defaults to the SBOM filename. `--issuer` supplies the cover's preparer and document author. Both are optional. The report ID incorporates the SBOM hash, DB hash and assessment timestamp. Finding numbers link the register to details; code/license review statuses are separate from vulnerability severity.
+
+Severity colors: Critical / High red, Medium amber, Low blue, None green, Unrated gray. Labels accompany colors for accessibility. Vulnerability counts consolidate aliases per component; category counts include review candidates. CVSS zero / None is a severity band, not proof of absence of vulnerabilities.
+
+Severity comes from validated CVSS 3.0/3.1 base vectors or recognized `database_specific.severity` labels. Package-specific OSV `affected.severity` overrides global vectors for that affected entry. Alias consolidation preserves all provenance and displays the highest supported severity; when sources disagree, the underlying labels/vectors and scores remain available in JSON. CVSS 2/4 vectors and malformed vectors are not calculated. Without other usable metadata these stay Unrated. No severity is inferred from advisory wording, AST review candidates or licenses.
+
+Report JSON schema 1.1 adds optional vulnerability `severity` (level, optional base score, and source record IDs / field paths / raw values) and optional CLI `sourceAnalysis` execution metadata. Presentation sorting does not alter the assessment JSON. Word contains concise severity attribution; full original metadata and references stay in JSON. This mode changes presentation and adds severity evidence, not the vulnerability matching criteria.
+
+Scoring reference: https://www.first.org/cvss/v3.1/specification-document
+OSV field reference: https://ossf.github.io/osv-schema/
+
+```js
+await writeWordReport(report, "customer.docx", "ja", {style: "customer", issuer: "Assessment Team"});
+```

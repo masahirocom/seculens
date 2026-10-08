@@ -9,14 +9,31 @@ import {
   TableRow,
   TableCell,
   WidthType,
+  Footer,
+  PageNumber,
+  AlignmentType,
 } from "docx";
 import { writeFile, readFile } from "node:fs/promises";
+import {
+  reportId,
+  customerFront,
+  customerTable,
+  orderedFindings,
+  pageBreak,
+  severityParagraphs,
+} from "./customer-report.js";
 import type { Report } from "./types.js";
 export async function writeWordReport(
   report: Report,
   file: string,
   language: "en" | "ja" = "en",
+  options: { style?: "standard" | "customer"; issuer?: string } = {},
 ): Promise<void> {
+  if (!["en", "ja"].includes(language))
+    throw new Error("Language must be en or ja");
+  if (options.style && !["standard", "customer"].includes(options.style))
+    throw new Error("Report style must be standard or customer");
+  const customerMode = options.style === "customer";
   const ja = language === "ja";
   const translations: Record<string, string> = {
     "Review the advisory references for a fixed version and validate the upgrade.":
@@ -52,14 +69,16 @@ export async function writeWordReport(
           } as Record<string, string>
         )[text] || text
       : text;
+  let keepFinding = false;
   const p = (text: string) =>
     new Paragraph({
       children: [new TextRun({ text })],
+      keepNext: customerMode && keepFinding,
       spacing: { after: 120 },
     });
   const heading = (text: string) =>
     new Paragraph({ text, heading: HeadingLevel.HEADING_1 });
-  const findings = report.findings;
+  const findings = customerMode ? orderedFindings(report) : report.findings;
   const vulnerable = new Set(
     findings
       .filter((f) => f.category === "vulnerability")
@@ -68,30 +87,32 @@ export async function writeWordReport(
   const unresolved = report.checks.filter(
     (c) => c.status === "unassessed",
   ).length;
-  const children: (Paragraph | Table)[] = [
-    new Paragraph({
-      text: ja
-        ? "ソフトウェアセキュリティ検査報告書"
-        : "Software Security Assessment Report",
-      heading: HeadingLevel.TITLE,
-    }),
-    p(`${report.customer} | SecuLens ${report.tool.version}`),
-    p(
-      ja
-        ? `対象 ${report.target}　検査日時 ${report.createdAt}`
-        : `Target ${report.target} | Assessed ${report.createdAt}`,
-    ),
-    p(
-      ja
-        ? `SBOM内の${report.sbom.components.length}件の構成部品を評価しました。既知の脆弱性に該当する部品は${vulnerable}件、脆弱性照合が未判定の部品は${unresolved}件です。以下の指摘と確認事項に沿って対応してください。`
-        : `Assessed ${report.sbom.components.length} SBOM components. ${vulnerable} components matched known vulnerability records; ${unresolved} components have incomplete vulnerability assessments. Review the findings and follow-up actions below.`,
-    ),
-    heading(ja ? "検査範囲と根拠" : "Scope and Evidence"),
-    p(`${report.sbom.format} ${report.sbom.version}`),
-    p(`SBOM SHA256 ${report.sbomSha256}`),
-    p(`DB ${report.database.source}`),
-    p(`DB SHA256 ${report.database.sha256}`),
-  ];
+  const children: (Paragraph | Table)[] = customerMode
+    ? customerFront(report, findings, ja, options.issuer || "")
+    : [
+        new Paragraph({
+          text: ja
+            ? "ソフトウェアセキュリティ検査報告書"
+            : "Software Security Assessment Report",
+          heading: HeadingLevel.TITLE,
+        }),
+        p(`${report.customer} | SecuLens ${report.tool.version}`),
+        p(
+          ja
+            ? `対象 ${report.target}　検査日時 ${report.createdAt}`
+            : `Target ${report.target} | Assessed ${report.createdAt}`,
+        ),
+        p(
+          ja
+            ? `SBOM内の${report.sbom.components.length}件の構成部品を評価しました。既知の脆弱性に該当する部品は${vulnerable}件、脆弱性照合が未判定の部品は${unresolved}件です。以下の指摘と確認事項に沿って対応してください。`
+            : `Assessed ${report.sbom.components.length} SBOM components. ${vulnerable} components matched known vulnerability records; ${unresolved} components have incomplete vulnerability assessments. Review the findings and follow-up actions below.`,
+        ),
+        heading(ja ? "検査範囲と根拠" : "Scope and Evidence"),
+        p(`${report.sbom.format} ${report.sbom.version}`),
+        p(`SBOM SHA256 ${report.sbomSha256}`),
+        p(`DB ${report.database.source}`),
+        p(`DB SHA256 ${report.database.sha256}`),
+      ];
   const labels: Record<string, string> = {
     vulnerability: "既知の脆弱性",
     license: "ライセンス評価",
@@ -108,17 +129,20 @@ export async function writeWordReport(
       ],
     ),
   ];
-  children.push(
-    new Table({
-      width: { size: 100, type: WidthType.PERCENTAGE },
-      rows: rows.map(
-        (row) =>
-          new TableRow({
-            children: row.map((text) => new TableCell({ children: [p(text)] })),
-          }),
-      ),
-    }),
-  );
+  if (!customerMode)
+    children.push(
+      new Table({
+        width: { size: 100, type: WidthType.PERCENTAGE },
+        rows: rows.map(
+          (row) =>
+            new TableRow({
+              children: row.map(
+                (text) => new TableCell({ children: [p(text)] }),
+              ),
+            }),
+        ),
+      }),
+    );
   for (const category of [
     "vulnerability",
     "license",
@@ -128,14 +152,23 @@ export async function writeWordReport(
   ]) {
     const group = findings.filter((f) => f.category === category);
     if (!group.length) continue;
-    children.push(heading(ja ? labels[category] : category));
+    children.push(
+      new Paragraph({
+        text: ja ? labels[category] : category,
+        heading: customerMode ? HeadingLevel.HEADING_2 : HeadingLevel.HEADING_1,
+      }),
+    );
     for (const f of group) {
+      keepFinding = true;
       const component = report.sbom.components.find((c) => c.id === f.subject);
       children.push(
         new Paragraph({
-          text: `${f.ruleId} ${f.summary}`,
-          heading: HeadingLevel.HEADING_2,
+          text: `${customerMode ? `F-${String(findings.indexOf(f) + 1).padStart(3, "0")}  ` : ""}${f.ruleId} ${f.summary}`,
+          heading: customerMode
+            ? HeadingLevel.HEADING_3
+            : HeadingLevel.HEADING_2,
         }),
+        ...severityParagraphs(f, ja, customerMode),
         p(
           `${component ? `${component.name}@${component.version || "unknown"}` : f.subject} | ${status(f.status)}${f.line ? ` | line ${f.line}` : ""}`,
         ),
@@ -165,6 +198,7 @@ export async function writeWordReport(
         if (!["https:", "http:"].includes(url.protocol)) continue;
         children.push(
           new Paragraph({
+            keepNext: customerMode,
             spacing: { after: 60 },
             children: [
               new ExternalHyperlink({
@@ -188,22 +222,91 @@ export async function writeWordReport(
               : "The complete reference list is preserved in the accompanying JSON report.",
           ),
         );
+      if (customerMode)
+        children.push(
+          new Paragraph({
+            keepNext: false,
+            spacing: { before: 0, after: 0 },
+            children: [new TextRun({ text: "", size: 2 })],
+          }),
+        );
+      keepFinding = false;
     }
   }
-  children.push(
-    heading(ja ? "構成部品の評価状況" : "Component Assessment Coverage"),
-  );
-  for (const c of report.sbom.components) {
-    const check = report.checks.find((x) => x.componentId === c.id);
+  if (customerMode) {
     children.push(
-      p(
-        `${c.name}@${c.version || "unknown"} | ${status(check?.status || "unassessed")} | ${c.licenses.join("; ") || "License unknown"}`,
+      pageBreak(),
+      heading(ja ? "4 構成部品の評価状況" : "4 Component Assessment Coverage"),
+    );
+    children.push(
+      customerTable(
+        [
+          [
+            ja ? "構成部品" : "Component",
+            ja ? "バージョン" : "Version",
+            ja ? "照合結果" : "Assessment",
+            ja ? "ライセンス" : "Licenses",
+          ],
+          ...report.sbom.components.map((c) => [
+            c.name,
+            c.version || "unknown",
+            status(
+              report.checks.find((x) => x.componentId === c.id)?.status ||
+                "unassessed",
+            ),
+            c.licenses.join("; ") || (ja ? "不明" : "Unknown"),
+          ]),
+        ],
+        [65, 25, 30, 50],
+        {},
+        true,
       ),
     );
+    children.push(
+      heading(ja ? "5 検査の根拠と制約" : "5 Evidence and Limitations"),
+    );
+    children.push(
+      p(
+        report.sourceAnalysis
+          ? `${ja ? "コード検査" : "Source analysis"} ${report.sourceAnalysis.language} | ${report.sourceAnalysis.target}`
+          : ja
+            ? "コード検査の実施情報は記録されていません。"
+            : "Source analysis execution metadata was not recorded.",
+      ),
+      p(
+        ja
+          ? "重要度の原データと全参照先は同梱のJSON報告書に記録しています。"
+          : "Raw severity metadata and all references are preserved in the accompanying JSON report.",
+      ),
+    );
+    for (const text of [
+      `${report.sbom.format} ${report.sbom.version}`,
+      `DB ${report.database.source}`,
+      `SBOM SHA256 ${report.sbomSha256}`,
+      `DB SHA256 ${report.database.sha256}`,
+    ])
+      children.push(
+        new Paragraph({
+          spacing: { after: 120 },
+          children: [new TextRun({ text, size: 18 })],
+        }),
+      );
+  } else {
+    children.push(
+      heading(ja ? "構成部品の評価状況" : "Component Assessment Coverage"),
+    );
+    for (const c of report.sbom.components) {
+      const check = report.checks.find((x) => x.componentId === c.id);
+      children.push(
+        p(
+          `${c.name}@${c.version || "unknown"} | ${status(check?.status || "unassessed")} | ${c.licenses.join("; ") || "License unknown"}`,
+        ),
+      );
+    }
+    children.push(
+      heading(ja ? "制約と確認事項" : "Limitations and Review Notes"),
+    );
   }
-  children.push(
-    heading(ja ? "制約と確認事項" : "Limitations and Review Notes"),
-  );
   for (const text of [...report.limitations, ...report.sbom.warnings])
     children.push(p(localize(text)));
   const doc = new Document({
@@ -217,7 +320,7 @@ export async function writeWordReport(
           },
         ]
       : [],
-    creator: "SecuLens",
+    creator: options.issuer || "SecuLens",
     title: "Software Security Assessment Report",
     styles: {
       default: {
@@ -227,6 +330,19 @@ export async function writeWordReport(
         },
       },
       paragraphStyles: [
+        {
+          id: "Heading3",
+          name: "Heading 3",
+          basedOn: "Normal",
+          next: "Normal",
+          run: {
+            font: ja ? "Noto Sans JP" : "Arial",
+            size: 21,
+            bold: true,
+            color: "000000",
+          },
+          paragraph: { keepNext: true, spacing: { before: 180, after: 80 } },
+        },
         {
           id: "Heading1",
           name: "Heading 1",
@@ -270,7 +386,37 @@ export async function writeWordReport(
     },
     sections: [
       {
+        ...(customerMode
+          ? {
+              footers: {
+                first: new Footer({ children: [new Paragraph("")] }),
+                default: new Footer({
+                  children: [
+                    new Paragraph({
+                      alignment: AlignmentType.RIGHT,
+                      children: [
+                        new TextRun({
+                          text: `SecuLens | ${reportId(report)} | `,
+                          size: 16,
+                        }),
+                        new TextRun({
+                          children: [PageNumber.CURRENT],
+                          size: 16,
+                        }),
+                        new TextRun({ text: " / ", size: 16 }),
+                        new TextRun({
+                          children: [PageNumber.TOTAL_PAGES],
+                          size: 16,
+                        }),
+                      ],
+                    }),
+                  ],
+                }),
+              },
+            }
+          : {}),
         properties: {
+          titlePage: customerMode,
           page: {
             size: { width: 11906, height: 16838 },
             margin: { top: 1134, bottom: 1134, left: 1134, right: 1134 },

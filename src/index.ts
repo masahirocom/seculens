@@ -1,3 +1,4 @@
+import { recordSeverity, mergeSeverity } from "./severity.js";
 import { createHash } from "node:crypto";
 import { parseSbom } from "./sbom.js";
 import { matchRecord, samePackage, supportedVersion } from "./matcher.js";
@@ -26,8 +27,8 @@ export function scanSbom(
 ): Report {
   const sbom = parseSbom(JSON.parse(input));
   const report: Report = {
-    schemaVersion: "1.0",
-    tool: { name: "SecuLens", version: "0.1.0" },
+    schemaVersion: "1.1",
+    tool: { name: "SecuLens", version: "0.2.0" },
     createdAt: options.createdAt || new Date().toISOString(),
     customer: options.customer || "Customer",
     target: options.target || "SBOM",
@@ -104,6 +105,7 @@ export function scanSbom(
         evidence: `${c.ecosystem}:${c.name}@${c.version}; matched against affected versions/ranges in ${r.id}`,
         recommendation:
           "Review the advisory references for a fixed version and validate the upgrade.",
+        severity: recordSeverity(r, c),
         aliases: r.aliases || [],
         references: (r.references || []).map((x) => x.url),
       });
@@ -152,6 +154,7 @@ export function scanSbom(
         ].sort();
         merged = {
           ...merged,
+          severity: mergeSeverity(merged.severity!, other.severity!),
           ruleId: all[0],
           aliases: all.slice(1),
           references: [
