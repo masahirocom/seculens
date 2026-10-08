@@ -1,6 +1,6 @@
 # Security policy
 
-SecuLens 0.1.x is an early release. Do not treat its findings as a complete security assessment.
+SecuLens 1.x is supported. Do not treat its findings as a complete security assessment.
 
 Please report exploitable defects privately through GitHub's private vulnerability reporting feature for this repository when available. Do not post customer SBOMs, proprietary source or credentials in public issues. If private reporting is unavailable, open a minimal issue asking for a private reporting channel without publishing exploit details.
 
