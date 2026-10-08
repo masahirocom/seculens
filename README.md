@@ -23,7 +23,7 @@ Choose an existing SBOM assessment or SBOM generation, then supply the requested
 Requires Node.js 22 or later and npm.
 
 ```sh
-npm install -g https://github.com/masahiroid/seculens/releases/download/v0.3.1/seculens-0.3.1.tgz
+npm install -g seculens
 seculens --help
 ```
 
