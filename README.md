@@ -1,10 +1,12 @@
 # SecuLens
 
+[English](README.md) | [日本語](README.jp.md)
+
 SecuLens is a TypeScript security assessment CLI and library. It reads SPDX and CycloneDX SBOMs, independently matches component versions against OSV advisory records, evaluates license policies, reviews JavaScript/TypeScript syntax trees, and writes customer-facing Word reports.
 
 **Version 0.3.1 is an early release.** Findings are evidence for review, not a guarantee of security or legal compliance. The independent Python implementation is available at https://github.com/masahiroid/seculens-python; PHP is planned.
 
-## Interactive wizard / 対話ウィザード
+## Interactive wizard
 
 Run `seculens` with no arguments to start interactive setup. English is the default: press Enter at the language prompt, or type `ja` for Japanese. Use `seculens wizard --lang ja` to open Japanese setup directly.
 
@@ -16,7 +18,6 @@ seculens wizard --lang ja
 
 Choose an existing SBOM assessment or SBOM generation, then supply the requested paths and options. Assessment asks for a local OSV snapshot or explicit OSV fetching, an optional license policy and source directory, customer / target / preparer, report style, output directory and findings exit policy. Customer report layout is the wizard default. Review the settings and confirm to start. EOF or choosing `n` at the final prompt cancels; Ctrl+C interrupts. OSV fetching sends package names and ecosystems; the wizard displays this before execution.
 
-`seculens` だけで起動すると設定ウィザードが始まります。言語選択でEnterを押すと英語、`ja` を入力すると日本語です。入力した言語をWordレポートにも使います。最後に設定を確認して開始できます。パスは現在の作業フォルダーを基準に入力してください。従来の `scan` / `sbom` コマンドとオプション指定も利用できます。
 
 ## Install
 
@@ -27,7 +28,7 @@ npm install -g seculens
 seculens --help
 ```
 
-The GitHub release archive is available independently of npm registry publication. Once published to npm, the package name will be `seculens`.
+Release archives are also available from [GitHub releases](https://github.com/masahiroid/seculens/releases).
 
 ## Assess an existing SBOM
 
@@ -89,7 +90,7 @@ SPDX expressions are parsed structurally. `AND` requires all branches to be allo
 - Packagist versions: stable numeric SemVer-compatible versions, leading `v`, four-part versions ending in `.0`, and SemVer prereleases. Composer branch aliases, nonzero fourth parts and other Composer-specific version syntax are unassessed.
 - OSV `SEMVER` and `ECOSYSTEM` ranges, explicit affected versions, fixed/last-affected/limit boundaries and withdrawn records. GIT-only ranges are unassessed. Equivalent advisory aliases are merged per component.
 
-A supported package URL (`pkg:npm`, `pkg:pypi`, `pkg:composer`) and version are required. Other ecosystems are recorded as unassessed. Input adapters validate fields used by SecuLens; they are not complete standards conformance validators. SPDX 3, XML, cryptographic attestation verification, CVSS prioritization, source license discovery, and infrastructure configuration audits are not supported yet.
+A supported package URL (`pkg:npm`, `pkg:pypi`, `pkg:composer`) and version are required. Other ecosystems are recorded as unassessed. Input adapters validate fields used by SecuLens; they are not complete standards conformance validators. SPDX 3, XML, cryptographic attestation verification, customer-specific risk prioritization, source license discovery, and infrastructure configuration audits are not supported yet.
 
 “No match” means no matching advisory in the supplied snapshot, not that a component is safe. An offline snapshot must contain the relevant records; SecuLens cannot prove its completeness. A supported version range provides package-level evidence, not proof that vulnerable code is reachable.
 
